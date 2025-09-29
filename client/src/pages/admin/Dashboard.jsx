@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import { ChartLineIcon, CircleDollarSignIcon, PlayCircleIcon, StarIcon, UsersIcon } from 'lucide-react';
-import { dummyDashboardData } from '../../assets/assets';
+// import { dummyDashboardData } from '../../assets/assets';
 import Loading from '../../components/Loading';
 import Title from '../../components/admin/Title';
 import BlurCircle from '../../components/BlurCircle';
 import { dateFormat } from '../../lib/dateFormat';
+import { useAppContext } from '../../context/AppContext';
+import toast from "react-hot-toast";
+
 
 
 const Dashboard = () => {
+
+  const { axios, getToken, user} = useAppContext();
+
   const currency = import.meta.env.VITE_CURRENCY
 
   const [dashboardData, setDashboardData] = useState({
@@ -27,13 +33,25 @@ const Dashboard = () => {
   ]
 
   const fetchDashboardData = async () => {
-    setDashboardData(dummyDashboardData)
-    setLoading(false)
+    try {
+      const { data } = await axios.get("/api/admin/dashboard", {headers: {Authorization: `Bearer ${await getToken()}`}})
+
+      if(data.success) {
+        setDashboardData(data.dashboardData);
+        setLoading(false);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error("Error fetching dashboard data:", error);
+    }
   };
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if(user) {
+      fetchDashboardData();
+    }
+  }, [user]);
 
   return !loading ? (
     <>

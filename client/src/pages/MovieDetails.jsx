@@ -1,41 +1,74 @@
 import React, { useState } from "react";
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { dummyDateTimeData, dummyShowsData } from "../assets/assets";
+// import { dummyDateTimeData, dummyShowsData } from "../assets/assets";
 import BlurCircle from "../components/BlurCircle";
 import { Heart, PlayCircleIcon, StarIcon } from "lucide-react";
 import timeFormat from "../lib/timeFormat";
 import DateSelect from "../components/DateSelect";
 import MovieCard from "../components/MovieCard";
 import Loading from "../components/Loading";
+import { useAppContext } from "../context/AppContext";
+import toast from "react-hot-toast";
+
 
 
 const MovieDetails = () => {
 
-    const navigate = useNavigate(); 
+const navigate = useNavigate(); 
 
 const {id} = useParams();
 const[show, setShow] = useState(null);
 
+const {shows, axios, getToken, user, fetchFavoriteMovies, favoriteMovies,
+ } = useAppContext(); 
+
 const getShow = async () => {
-   const show = dummyShowsData.find(show => show._id === id)
-   if(show){
-       setShow({
-    movie: show,
-    dateTime: dummyDateTimeData
-     })
+   try {
+     const {data} = await axios.get(`/api/show/${id}`)
+     if(data.success){
+        setShow(data);
+     }
+   } catch (error) {
+     console.log(error);
    }
+}
+
+const handleFavorite = async () => {
+    try {
+        if(!user) return toast.error("Please login to proceed.");
+
+      const {data} = await axios.post('/api/user/update-favorite', {movieId: id},
+      { headers: { Authorization: `Bearer ${await getToken()}` }});
+
+     if(data.success){
+        await fetchFavoriteMovies();
+        toast.success(data.message);
+     }
+    } catch (error) {
+        console.log(error);
+    }
 }
 
   useEffect(()=> {
    getShow();
   },[id])
 
+  console.log("shows from context", shows);
+
     return show ? (
         <div className="px-6 md:px-16 lg:px-40 pt-30 md:pt-50">
             <div className="flex flex-col md:flex-row gap-8 max-w-6xl mx-auto">
-              <img src={show.movie.poster_path} alt="" className="max-md:mx-auto
-              rounded-xl h-104 max-w-70 object-cover " />
+
+                <img
+                src={
+                show.movie.poster_path && show.movie.poster_path !== "N/A"
+                ? show.movie.poster_path       // DB or OMDb stored full URL
+                : show.movie.poster || show.movie.Poster || "/no-image.png"
+                 }
+                 alt={show.movie.title}
+                 className="max-md:mx-auto rounded-xl h-104 max-w-70 object-cover"
+                 />
 
               <div className="relative flex flex-col gap-3">
                <BlurCircle top="-100px" left="-100px" />
@@ -52,7 +85,7 @@ const getShow = async () => {
 
                  <p>
                     {timeFormat(show.movie.runtime)}  •   {show.movie.genres.map(genre =>              
-                    genre.name ).join(" , ")}  •   {show.movie.release_date.split(" - ")[0]}
+                    genre).join(" , ")}  •   {show.movie.release_date.split(" - ")[0]}
                  </p>
 
                  <div className="flex items-center flex-wrap gap-4 mt-4">
@@ -65,42 +98,78 @@ const getShow = async () => {
                     <a href="#dateSelect" className="px-10 py-3 text-sm bg-primary 
                     hover:bg-primary-dull transition rounded-md font-medium cursor-pointer
                     active:scale-95 " >Buy Tickets</a>
-                    <button className="bg-gray-700 p-2.5 rounded-full transition
+                    <button onClick={handleFavorite} className="bg-gray-700 p-2.5 rounded-full transition
                     cursor-pointer active:scale-95 ">
-                        <Heart className={`w-5 h-5`} />
+                     <Heart className={`w-5 h-5 ${favoriteMovies.find(movie => movie._id
+                      === id) ? 'fill-primary text-primary' : ""} `} />
                     </button>
                  </div>
               </div>
             </div>
 
-            <p className="text-lg font-medium mt-20">Your Favorite Cast</p>
-            <div className="overflow-x-auto no-scrollbar mt-8 pb-4">
-                <div className="flex items-center gap-4 w-max px-4 ">
-                {show.movie.casts.slice(0,12).map((cast, index)=>(
-                    <div key={index} className="flex flex-col items-center text-center ">
-                        <img src={cast.profile_path} alt="" className="rounded-full h-20
-                        md:h-20 aspect-square object-cover " />
-                       <p className="font-medium text-xs mt-3">{cast.name}</p>
-                    </div>
-                ))}
-                </div>
-            </div>
+       <p className="text-lg font-medium mt-20">Your Favorite Cast</p>
+<div className="overflow-x-auto no-scrollbar mt-8 pb-4">
+  <div className="flex items-center gap-4 w-max px-4">
+    {show.movie.casts.slice(0, 12).map((castName, index) => (
+      <div key={index} className="flex flex-col items-center text-center">
+        {/* ✅ Circle with first letter instead of a broken image */}
+        <div
+          className="rounded-full h-20 w-20 flex items-center justify-center
+                     bg-gray-700 text-primary text-xl font-semibold"
+        >
+          {castName.charAt(0).toUpperCase()}
+        </div>
 
+        <p className="font-medium text-xs mt-3">{castName}</p>
+      </div>
+    ))}
+  </div>
+</div>
          <DateSelect  dateTime={show.dateTime} id={id}/>
 
          <p className=" text-lg font-medium mt-20 mb-8 ">You May Also Like</p>
 
          <div className="flex flex-wrap max-sm:justify-center gap-8">
-            {dummyShowsData.slice(0,4).map((movie, index)=> (
-                <MovieCard key={index} movie={movie} />
-            )) }
 
-         </div>
+ {shows.slice(0, 4).map((item, index) => (
+  <MovieCard
+    key={item._id || index}
+    movie={{
+      // 🔑 take data from item.movie instead of item
+      _id: item.movie._id,
+      title: item.movie.title || item.movie.Title || "Untitled",
+      poster_path:
+        item.movie.poster_path && item.movie.poster_path !== "N/A"
+          ? item.movie.poster_path
+          : item.movie.poster || item.movie.Poster || "/no-image.png",
+      vote_average:
+        item.movie.vote_average ??
+        (item.movie.imdbRating ? parseFloat(item.movie.imdbRating) : 0),
+      release_date:
+        item.movie.release_date ||
+        item.movie.ReleaseDate ||
+        item.movie.Year ||
+        "N/A",
+      genres:
+        item.movie.genres ||
+        item.movie.genre_ids ||
+        (item.movie.Genre ? item.movie.Genre.split(",") : []),
+      runtime: item.movie.runtime || item.movie.Runtime || 0,
+    }}
+  />
+))}
+
+</div>
+
+
+
+
+         
+
           <div className="flex justify-center mt-20">
               <button onClick={()=> {navigate('/movies'); scrollTo(0,0) } } className="px-10 py-3 text-sm bg-primary hover:bg-primary-dull
               transition rounded-md font-medium cursor-pointer ">Show More</button>  
           </div>
-
 
         </div>
     ) : <Loading />

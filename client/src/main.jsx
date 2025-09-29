@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import { BrowserRouter } from 'react-router-dom';
 import { ClerkProvider } from '@clerk/clerk-react'; // v5+ works with React 19
+import { AppProvider } from './context/AppContext.jsx';
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -16,7 +17,9 @@ root.render(
   <React.StrictMode>
      <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
       <BrowserRouter>
-        <App />
+      <AppProvider>
+       <App />
+      </AppProvider>
       </BrowserRouter>
     </ClerkProvider>
   </React.StrictMode>
