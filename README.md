@@ -45,6 +45,11 @@ A full-stack web application built with the MERN stack (MongoDB, Express.js, Rea
 - **Concurrently** - Run multiple commands
 - **CORS** - Cross-origin requests
 
+## 🌐 Live Preview
+
+https://quickshow-rust-ten.vercel.app/
+
+
 ## 📸 Screenshots
 
 ### 🏠 Dashboard Page
@@ -68,9 +73,6 @@ A full-stack web application built with the MERN stack (MongoDB, Express.js, Rea
 ### 💳 Stripe Payment
 ![Stripe Payment](screenshots/Stripe_Payment.JPG)
 
-Live Link 
-
-https://quickshow-rust-ten.vercel.app/
 
 ## 🚀 Quick Start
 
